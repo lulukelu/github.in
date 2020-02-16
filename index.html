@@ -1,0 +1,159 @@
+<html>
+<head>    
+	<meta charset="UTF-8">    
+	<script src="./sdk/CloudEC-SDK.js" /></script>    
+	<!--begin:webcomponentsts init-->    
+	<script>        
+		if (!window.customElements) { document.write('<!--'); } else { window.ShadyDOM = { force: true }; window.customElements.forcePolyfill = true; }    
+	</script>    
+	<script src="./usage/components/webcomponentsjs-1.0.20/custom-elements-es5-adapter.js"></script>    
+	<!--! do not remove -->    
+	<script src="./usage/components/webcomponentsjs-1.0.20/webcomponents-loader.js"></script>    
+	<!--end:webcomponentsts init-->
+
+	<script>
+		var options = {
+			domain: "localhost.cloudec.huaweicloud.com",
+			isWSS: 1,
+			confCtrlProtocol: 1,
+			isTlsSupport: 0,
+			uiPluginAppDisplayName : "eSDK-Desktop",
+
+			uiPluginlLanguage : 0,
+			uiPluginResourcesPath: "",
+			uiPluginUserFilesPath:"",
+			uiPluginHasFrameInfo:0,
+			uiPluginFrameInfoX:0,
+			uiPluginFrameInfoY:0,
+			uiPluginFrameInfoWidth:1280,
+			uiPluginFrameInfoHeight:720,
+			uiPluginHasParentInfo:0,
+			uiPluginParentInfoIsNeedAttach:0,
+			uiPluginParentInfoXOffsetRate:0,
+			uiPluginParentInfoYOffsetRate:0,
+
+			uiPluginHideTopToolBar:0,
+			uiPluginHideBottomToolBar:0,
+			uiPluginHideInviteButton:1,
+			uiPluginHideAttendeesButton:1,
+			uiPluginHideShareButton:1,
+			uiPluginDataHideInviteButton:1,
+			uiPluginDataHideAttendeesButton:1,
+			uiPluginDataHideRequestRemotecontrolButton:1,
+		}
+		cloudEC.configure(options);	
+
+		var listeners = {            
+			onConfConnected: function (ret) {                
+				alert("the conference is connected" + JSON.stringify(ret))            
+			},            
+			onError: function (ret) {                
+				alert("wowo,error is coming!" + JSON.stringify(ret))                
+				console.error(JSON.stringify(ret))            
+			}			
+			//......other events        
+		}        
+
+		var client = cloudEC.createClient(listeners);        
+
+		function login() {                        
+			var account = document.getElementById("name").value;            
+			var passwd = document.getElementById("passwd").value;            
+			var serverAddress = document.getElementById("svr_addr").value;            
+			var serverPort = document.getElementById("svr_port").value;            
+
+			//0: account auth type, 1: third token auth type            
+			client.login(0, { 'account': account, 'passwd': passwd },                
+				{ 'serverAddress': serverAddress, 'serverPort': parseInt(serverPort) }, function callback(evt) {                    
+					if (!evt.result) {                        
+						alert("login failed errorCode:" + evt.info.errorCode + "errorInfo:" + evt.info.errorInfo)                    
+					} else {                        
+						alert("good,to do something here for login success")                        
+						var userInfo = "<dl><dt>USER INFO</dt><dd>user account:" + evt.info.userAccount                            
+						+ "</dd><dd>SIP number:" + evt.info.sipAccount                            
+						+ "</dd><dd>short number:" + evt.info.shortNumber                            
+						+ "</dd><dd>login time" + evt.info.loginTime                            
+						+ "</dd>"                        
+						document.getElementById("userinfo").innerHTML = userInfo;                        
+						//change UI to login successful                        
+						document.getElementById("login").style.display = "none";                        
+						document.getElementById("usage").style.display = "block";                    
+					}                
+				});        
+		}//end login         
+
+		function joinConference() {            
+			var joinConfParam = {                
+				conferenceId: document.getElementById("conferenceId").value,                
+				accessNumber: document.getElementById("accessNumber").value,                
+				confPasswd: document.getElementById("confPasswd").value            
+			}            
+			client.joinConference(joinConfParam, function callback(evt) {                
+				console.info(JSON.stringify(evt.info))            
+			});        
+		}
+
+		function joinInstanceConf() {
+			var attendeeInfo = document.getElementById("member_list").value;
+			var array = attendeeInfo.split(",");
+			var attendees = new Array();
+			for (var i = 0; i < array.length; i++) {
+				attendees[i] = { number: array[i], name: "", smsPhone: "", email: "", autoInvite: 1, role: 0 };
+			}
+
+			var instanceConfParam = { isVideo: 1, language: 1, attendees: attendees, isHdConf: 1}
+
+			client.joinInstanceConf(instanceConfParam, function callback(ret) {});
+		}
+
+		function logout() {            
+			alert("hi i am going now!")            
+			client.logout();            
+			//change UI to login            
+			document.getElementById("login").style.display = "block";            
+			document.getElementById("usage").style.display = "none";        
+		}    
+
+	</script>
+</head>
+
+<body>    
+	<h2>CloudEC JS SDK Hello World</h2>
+
+	<div id="tab-content1" class="tab-content">        
+		<fieldset>            
+			<legend>User login</legend>            
+			<div id="login">                                
+				server address:                 
+				<input type="text" id="svr_addr" value="bmeeting.huaweicloud.com" /> port:                 
+				<input type="text" id="svr_port" value="443" /> username:                                
+				<input type="text" id="name" value="" /> password:                                 
+				<input type="password" id="passwd" value="" />                
+				<button onclick="login()">login</button>            
+			</div>        
+		</fieldset>    
+	</div>    
+	
+	<div id="usage" style="display:none">        
+		<fieldset>            
+			<legend>User logout</legend>            
+			<div id="userinfo"></div>            
+			<button onclick="logout()">logout</button>        
+		</fieldset>        
+		<fieldset>            
+			<legend>Instance conference</legend>            
+			members list:             
+			<input type="text" id="member_list" value="" />            
+			<button onclick="joinInstanceConf()">instance conference</button>        
+		</fieldset>        
+		<fieldset>            
+			<legend>Book conference</legend>            
+			conference ID:             
+			<input type="text" id="conferenceId" value="" /> access code:             
+			<input type="text" id="accessNumber" value="+991117" /> conference password:             
+			<input type="text" id="confPasswd" value="" />            
+			<button onclick="joinConference()">access reserved conference</button>        
+		</fieldset>       
+	</div>
+</body>
+</html>
